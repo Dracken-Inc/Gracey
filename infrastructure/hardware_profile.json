@@ -1,0 +1,63 @@
+{
+  "system": {
+    "name": "Gracey-GB10",
+    "platform": "NVIDIA Grace Blackwell GB10",
+    "form_factor": "Desktop superchip module",
+    "architecture": "Grace CPU + Blackwell GPU (unified memory)"
+  },
+  "cpu": {
+    "model": "NVIDIA Grace (ARM Neoverse V2)",
+    "cores": 72,
+    "threads": 72,
+    "base_clock_ghz": 3.1,
+    "boost_clock_ghz": 3.6,
+    "architecture": "ARMv9 / AArch64",
+    "l3_cache_mb": 114
+  },
+  "gpu": {
+    "model": "NVIDIA Blackwell GB10",
+    "cuda_cores": 4096,
+    "tensor_cores": "5th generation",
+    "fp8_tflops": 1000,
+    "fp16_tflops": 500,
+    "bf16_tflops": 500,
+    "fp32_tflops": 250,
+    "nvlink_bandwidth_gbps": 900
+  },
+  "memory": {
+    "type": "LPDDR5X unified (CPU+GPU shared)",
+    "total_gb": 128,
+    "bandwidth_gbps": 546,
+    "ecc": true,
+    "notes": "No separate VRAM; full 128 GB available to GPU workloads"
+  },
+  "storage": {
+    "interface": "NVMe PCIe Gen5",
+    "recommended_min_tb": 2,
+    "notes": "Models directory should reside on NVMe for fast loading"
+  },
+  "networking": {
+    "ethernet": "10GbE",
+    "optional_infiniband": "ConnectX-7 (for multi-node clusters)"
+  },
+  "os": {
+    "supported": ["Ubuntu 22.04 LTS", "Ubuntu 24.04 LTS"],
+    "preferred": "Ubuntu 24.04 LTS",
+    "kernel_min": "6.6"
+  },
+  "software": {
+    "cuda_min": "12.4",
+    "cuda_recommended": "12.6",
+    "driver_min": "550",
+    "driver_recommended": "565",
+    "python_min": "3.10",
+    "python_recommended": "3.11"
+  },
+  "openclaw_limits": {
+    "max_model_size_gb": 110,
+    "recommended_worker_count": 4,
+    "max_context_tokens": 131072,
+    "recommended_batch_size": 32,
+    "notes": "Leave ~18 GB headroom for OS, system processes, and logging buffers"
+  }
+}

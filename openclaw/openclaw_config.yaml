@@ -1,0 +1,87 @@
+# openclaw_config.yaml
+# Base configuration for the OpenClaw inference worker on Gracey-GB10.
+# Adjust values to match your model choice and available memory.
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model:
+  # Path to the model directory or HuggingFace model ID
+  # Place local models in /opt/gracey/models/<model-name>/
+  path: "/opt/gracey/models/default"
+
+  # Data type for inference (bfloat16 recommended for Blackwell)
+  dtype: "bfloat16"          # float32 | float16 | bfloat16 | int8 | int4
+
+  # Maximum context window in tokens
+  max_context_length: 32768
+
+  # Load the model into GPU memory on startup (true) or lazily (false)
+  preload: true
+
+  # Trust remote code in model repos (set false unless model requires it)
+  trust_remote_code: false
+
+# ── Memory Management ─────────────────────────────────────────────────────────
+memory:
+  # GB10 has 128 GB unified memory; leave headroom for OS and other processes.
+  # Expressed as a fraction (0.0–1.0) of total system memory.
+  gpu_memory_fraction: 0.85    # ~108 GB of 128 GB
+
+  # Maximum size (GB) of a single model that can be loaded
+  max_model_size_gb: 110
+
+  # KV-cache size limit in tokens
+  kv_cache_tokens: 65536
+
+  # Offload layers to CPU when GPU memory is under pressure
+  cpu_offload: false
+
+# ── Workers ───────────────────────────────────────────────────────────────────
+workers:
+  # Number of concurrent inference workers
+  count: 4
+
+  # Maximum requests queued per worker before returning 503
+  queue_depth: 16
+
+  # Timeout for a single inference request (seconds)
+  request_timeout_seconds: 120
+
+# ── Server ────────────────────────────────────────────────────────────────────
+server:
+  host: "127.0.0.1"   # Bind to localhost; API gateway handles external traffic
+  port: 9000
+  # Maximum input tokens per request (hard cap, regardless of model max_ctx)
+  max_input_tokens: 8192
+  # Maximum output tokens per request
+  max_output_tokens: 4096
+
+# ── Sampling Defaults ─────────────────────────────────────────────────────────
+sampling:
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  repetition_penalty: 1.1
+  # These defaults can be overridden per-request in the API payload.
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level: "INFO"           # DEBUG | INFO | WARNING | ERROR
+  log_dir: "/var/log/gracey"
+  log_file: "openclaw.log"
+  max_size_mb: 200
+  backup_count: 7
+  # Log every request/response pair (may be verbose at high throughput)
+  log_requests: false
+
+# ── Hardware Hints (GB10-specific) ────────────────────────────────────────────
+hardware:
+  # Grace Blackwell unified memory — no separate VRAM copy needed
+  unified_memory: true
+  # Use NVLink bandwidth between CPU and GPU cores
+  nvlink_enabled: true
+  # Tensor parallelism degree (1 = single-chip, increase for multi-chip future)
+  tensor_parallel: 1
+  # Flash Attention 3 (available on Blackwell)
+  flash_attention: true
+  # Compile the model graph at startup for faster steady-state throughput
+  torch_compile: false     # Set true after validating correctness
