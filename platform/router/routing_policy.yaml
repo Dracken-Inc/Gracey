@@ -1,0 +1,29 @@
+# routing_policy.yaml
+# Router policy for no-hardware and hardware phases.
+# Router dispatches requests across four assistants.
+
+classifier:
+  default_role: fast
+  mode: auto
+  rules:
+    - name: "force_thinker_by_keyword"
+      contains_any: ["reason", "proof", "analyze", "debug deeply"]
+      route_to: thinker
+    - name: "force_architect_by_keyword"
+      contains_any: ["design", "architecture", "roadmap", "system"]
+      route_to: architect
+    - name: "force_heavy_on_large_context"
+      min_prompt_chars: 8000
+      route_to: heavy
+
+fallbacks:
+  - from: architect
+    to: thinker
+  - from: heavy
+    to: fast
+
+timeouts_ms:
+  fast: 1500
+  thinker: 4000
+  heavy: 5000
+  architect: 7000

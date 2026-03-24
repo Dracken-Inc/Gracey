@@ -1,0 +1,61 @@
+# role_registry.yaml
+# Gracey runs four assistants.
+# Runtime assignment is benchmark plus policy driven and can differ by assistant.
+# runtime: auto means arbitration result chooses vllm or trtllm.
+
+runtime_selection_policy:
+  method: "benchmark_plus_policy"
+  required_metrics:
+    - ttft_ms
+    - p95_latency_ms
+    - tokens_per_second
+    - cold_start_ms
+    - error_rate_percent
+  tie_breakers:
+    - reliability
+    - operational_simplicity
+
+roles:
+  - id: fast
+    assistant_name: "Worker Fast"
+    description: "Throughput-optimized MoE path"
+    model: "nvidia/Qwen3-30B-A3B-FP4"
+    quantization: "NVFP4"
+    runtime: "auto"
+    warm: true
+    max_context_length: 16384
+    max_output_tokens: 2048
+
+  - id: heavy
+    assistant_name: "Worker Heavy"
+    description: "Dense quality anchor"
+    model: "nvidia/Qwen3-32B-FP4"
+    quantization: "NVFP4"
+    runtime: "auto"
+    warm: false
+    max_context_length: 32768
+    max_output_tokens: 4096
+
+  - id: thinker
+    assistant_name: "Thinker"
+    description: "Reasoning-specialized path"
+    model: "nvidia/Phi-4-reasoning-plus-NVFP4"
+    quantization: "NVFP4"
+    runtime: "auto"
+    warm: true
+    max_context_length: 32768
+    max_output_tokens: 4096
+
+  - id: architect
+    assistant_name: "Architect"
+    description: "Highest-capability planning and synthesis"
+    models:
+      - "openai/gpt-oss-120b"
+      - "nvidia/Llama-3.3-70B-Instruct-NVFP4"
+    quantization:
+      - "MXFP4"
+      - "NVFP4"
+    runtime: "auto"
+    warm: false
+    max_context_length: 65536
+    max_output_tokens: 4096

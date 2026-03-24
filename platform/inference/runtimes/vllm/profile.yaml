@@ -1,0 +1,14 @@
+# vllm/profile.yaml
+
+runtime: vllm
+engine_args:
+  host: "127.0.0.1"
+  port: 9000
+  gpu_memory_utilization: 0.85
+  max_num_seqs: 64
+  max_model_len: 32768
+  trust_remote_code: false
+
+launch_examples:
+  - "python -m vllm.entrypoints.openai.api_server --host 127.0.0.1 --port 9000 --model nvidia/Qwen3-30B-A3B-FP4"
+  - "python -m vllm.entrypoints.openai.api_server --host 127.0.0.1 --port 9000 --model nvidia/Phi-4-reasoning-plus-NVFP4"

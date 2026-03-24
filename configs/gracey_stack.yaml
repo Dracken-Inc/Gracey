@@ -1,0 +1,57 @@
+# gracey_stack.yaml
+# Primary stack configuration for the refactored Gracey platform.
+# This file is hardware-agnostic and supports mock mode for pre-hardware development.
+
+project:
+  name: "Gracey"
+  version: "0.2.0-scaffold"
+  mode: "mock" # mock | hardware
+  assistants_count: 4
+
+assistants:
+  topology: "fixed-four"
+  ids:
+    - fast
+    - heavy
+    - thinker
+    - architect
+
+resource_management:
+  strategy: "big-indian-little-indian"
+  little_indian_lane:
+    roles: ["fast", "thinker"]
+    objective: "low_latency_and_cost"
+  big_indian_lane:
+    roles: ["heavy", "architect"]
+    objective: "depth_and_reliability"
+  escalation:
+    low_confidence_threshold: 0.75
+    checksum_failure_forces_big_lane: true
+
+control_plane:
+  provider: "nemoclaw"
+  profile_path: "platform/control/nemoclaw_profile.yaml"
+  policy_path: "platform/control/openshell_policy.yaml"
+
+routing:
+  strategy: "hybrid"
+  default_role: "fast"
+  fast_path_latency_budget_ms: 1500
+  cold_start_roles:
+    - heavy
+    - architect
+
+api:
+  host: "0.0.0.0"
+  port: 8080
+  auth_token_env: "API_GATEWAY_AUTH_TOKEN"
+
+telegram:
+  enabled: false
+  bot_token_env: "TELEGRAM_BOT_TOKEN"
+  default_mode: "auto"
+
+observability:
+  enable_prometheus: true
+  prometheus_port: 9090
+  tracing_enabled: false

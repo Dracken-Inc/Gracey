@@ -1,0 +1,23 @@
+# nemoclaw_profile.yaml
+# Control plane profile used by NemoClaw/OpenShell workflows.
+
+sandbox:
+  name: "gracey"
+  strict_mode: true
+  network_policy_file: "platform/control/openshell_policy.yaml"
+
+lifecycle:
+  health_poll_seconds: 15
+  restart_on_failure: true
+
+providers:
+  local_inference:
+    enabled: true
+    endpoint_from_env: "INFERENCE_ROUTER_URL"
+  nvidia_endpoint:
+    enabled: false
+    api_key_env: "NVIDIA_API_KEY"
+
+notes:
+  - "This profile is scaffold-only until hardware is available."
+  - "Use mock router endpoint during local development."

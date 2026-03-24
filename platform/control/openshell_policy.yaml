@@ -1,0 +1,21 @@
+# openshell_policy.yaml
+# Minimal starting policy for local development.
+# Tighten further before production hardware rollout.
+
+version: 1
+network:
+  default: deny
+  allow:
+    - host: "localhost"
+      ports: [8080, 9000, 9090]
+filesystem:
+  read:
+    - "/opt/gracey"
+    - "/tmp"
+  write:
+    - "/tmp"
+    - "/var/log/gracey"
+process:
+  allow_privilege_escalation: false
+inference:
+  route_via_control_plane: true

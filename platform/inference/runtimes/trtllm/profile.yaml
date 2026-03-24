@@ -1,0 +1,11 @@
+# trtllm/profile.yaml
+
+runtime: trtllm
+server:
+  host: "127.0.0.1"
+  port: 9001
+
+notes:
+  - "Use Spark playbook container workflow for first deployment."
+  - "Select TRT-LLM per role only when benchmark wins over vLLM."
+  - "Expose OpenAI-compatible endpoint via adapter if needed."

@@ -1,86 +1,69 @@
-# Gracey-GB10 Roadmap
+# Gracey Roadmap (NemoClaw Refactor)
 
-This document outlines planned improvements and future directions for the
-Gracey-GB10 inference node, organised by approximate time horizon.
+This roadmap tracks the hard-reset migration to a NemoClaw-first architecture
+with role-based runtime arbitration between vLLM and TensorRT-LLM.
 
----
+## Current Status (v0.2 — Refactor Scaffold)
 
-## Current Status (v0.1 — Initial Scaffold)
+- [x] New architecture scaffold for control, inference, router, and interfaces
+- [x] Global stack config (`configs/gracey_stack.yaml`)
+- [x] Role registry for fast/heavy/thinker/architect
+- [x] Router policy skeleton with fallback rules
+- [x] Mock API for pre-hardware development
+- [x] Telegram bridge stub for integration testing
+- [x] Migration document and no-hardware startup scripts
+- [x] Legacy OpenClaw assets retained for reference
 
-- [x] Project directory structure and documentation
-- [x] GB10 environment setup guide
-- [x] OpenClaw install script
-- [x] Hardware profile JSON
-- [x] Telegram bot integration guide
-- [x] API Gateway placeholder
-- [x] Service configuration (placeholders)
-- [x] OpenClaw base configuration
-- [x] System identity and lineage documentation
+## Near-Term (v0.3 — Local Functional Prototype)
 
----
+### Target Window (Pre-Hardware)
 
-## Near-Term (v0.2 — First Running System)
+Before hardware arrives.
 
-_Target: when GB10 hardware arrives_
+- [ ] Implement real router service from `routing_policy.yaml`
+- [ ] Add API auth and per-user rate limiting middleware
+- [ ] Add structured request IDs and JSON logging
+- [ ] Add benchmark harness skeleton with replayable test prompts
+- [ ] Add mock runtime adapters for vLLM and TensorRT-LLM contracts
+- [ ] Add CI checks for YAML and Python lint/type validation
 
-- [ ] Complete API Gateway implementation (`services/api_gateway/main.py`)
-- [ ] Telegram bot working end-to-end against OpenClaw
-- [ ] First model loaded and responding to queries
-- [ ] Systemd service units for all three services
-- [ ] Health-check endpoint and basic monitoring dashboard
-- [ ] CI pipeline for linting and config validation
+## Hardware Arrival Phase (v0.4 — Spark Bring-Up)
 
----
+### Target Window (Hardware Bring-Up)
 
-## Short-Term (v0.3 — Hardening)
+First week with DGX Spark access.
 
-- [ ] Authentication middleware with rotating API tokens
-- [ ] Per-user rate limiting in the API Gateway
-- [ ] Streaming responses (SSE) from OpenClaw through to Telegram
-- [ ] Structured JSON logging with log rotation
-- [ ] Prometheus metrics exporter and Grafana dashboard
-- [ ] Automated model download helper script
-- [ ] Integration test suite against a stub OpenClaw endpoint
+- [ ] Validate NemoClaw/OpenShell install path on target host
+- [ ] Stand up vLLM for `fast` and `thinker` roles
+- [ ] Run role baseline benchmarks for all target models
+- [ ] Bring up TensorRT-LLM path for role-by-role comparison
+- [ ] Select runtime winner per role and lock in role registry
+- [ ] Enable health dashboards and role-level SLO tracking
 
----
+## Short-Term (v0.5 — Production Candidate)
 
-## Medium-Term (v1.0 — Production-Ready)
+- [ ] Implement streaming responses on API and Telegram
+- [ ] Add warm pool manager for `heavy` and `architect` roles
+- [ ] Add failover policies for runtime and model unavailability
+- [ ] Add policy conformance tests for OpenShell egress controls
+- [ ] Build deployment templates (systemd and compose)
 
-- [ ] Multi-model support: hot-swap models without restarting the worker
-- [ ] Conversation history and context management (per-user, persistent)
-- [ ] Fine-tuning pipeline: LoRA adapters trained on GB10
-- [ ] Web UI (lightweight chat interface served by the API Gateway)
-- [ ] Discord bot integration alongside Telegram
-- [ ] Container images (Docker) for each service component
-- [ ] Helm chart or Compose file for reproducible deployments
+## Medium-Term (v1.0 — Stable Single-Node Production)
 
----
+- [ ] End-to-end reliability testing under mixed role workloads
+- [ ] Persistent conversation/context management by user and role
+- [ ] Complete operations playbooks and incident runbooks
+- [ ] Full observability: p95 latency, TTFT, tok/s, cold-start events
 
-## Long-Term (v2.0 — Multi-Node Cluster)
+## Long-Term (v2.0 — Multi-Node Expansion)
 
-- [ ] **Multi-GB10 cluster**: tensor-parallel inference across two or more nodes
-  connected via InfiniBand (ConnectX-7)
-- [ ] Distributed KV-cache sharing between nodes
-- [ ] Load balancer in front of multiple OpenClaw workers
-- [ ] Federated identity: one user session spanning multiple nodes
-- [ ] Model registry: versioned model artefacts with rollback support
-- [ ] Automated hardware benchmarking suite for new GB10 units
-
----
-
-## Research & Experimentation
-
-- [ ] Benchmark Flash Attention 3 vs. standard attention on GB10
-- [ ] Evaluate INT4 / FP8 quantisation trade-offs on Blackwell tensor cores
-- [ ] Experiment with speculative decoding for lower latency
-- [ ] Explore MoE (Mixture of Experts) models on unified memory
-- [ ] Document GB10 performance baselines for common model sizes
-  (7B, 13B, 34B, 70B, 110B+)
-
----
+- [ ] Multi-node inference scaling and scheduler-aware routing
+- [ ] Role-aware load balancing across nodes
+- [ ] Shared model/artifact registry and rollback strategy
+- [ ] Automated re-benchmarking on runtime/model updates
 
 ## Notes
 
-- Priorities may shift based on hardware availability and community feedback.
-- Contributions and feature requests are welcome via GitHub Issues.
-- The roadmap is intentionally aspirational; items may be re-scoped or deferred.
+- Runtime selection is empirical and hardware-specific.
+- Preserve `secrets/GraYc.txt` exactly through every migration stage.
+- Legacy OpenClaw docs/scripts stay available until parity is reached.

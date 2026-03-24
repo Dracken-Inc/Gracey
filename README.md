@@ -1,122 +1,157 @@
-# Gracey-GB10
+# Gracey
 
-A clean, modular, hardware-aware starter project for deploying
-[OpenClaw](https://github.com/openclaw/openclaw) on an
-**NVIDIA Grace Blackwell GB10** local inference node named **Gracey-GB10**.
+Gracey is a NemoClaw-first, role-routed local AI platform scaffold for NVIDIA
+DGX Spark / GB10 class hardware.
 
-Named after **David Harold Blackwell** — statistician, game theorist, and trailblazer.
+This refactor moves Gracey from a single OpenClaw worker layout to a multi-role
+architecture with benchmark-driven runtime arbitration between vLLM and
+TensorRT-LLM.
+
+This project is intentionally built around four assistants, not one.
+
+Named after **David Harold Blackwell** - statistician, game theorist, and trailblazer.
+
+## Current Stage
+
+- Hardware status: not yet available.
+- Development mode: mock-first, local API stubs.
+- Migration style: hard reset scaffold with legacy files retained.
+- Protected artifact: `secrets/GraYc.txt` is explicitly preserved.
 
 ---
 
-## Repository Layout
+## Repository Layout (Refactor Scaffold)
 
-```
+```text
 Gracey/
-├── infrastructure/          # Hardware setup, install scripts, and hardware profile
-│   ├── setup_gb10_environment.md   # Prepare a fresh GB10 system
-│   ├── openclaw_install.sh         # Install OpenClaw and all dependencies
-│   └── hardware_profile.json       # GB10 hardware capabilities reference
-│
-├── services/                # External-facing service integrations
-│   ├── telegram_bot/
-│   │   └── README.md               # Connect a Telegram bot via BotFather
-│   ├── api_gateway/
-│   │   └── README.md               # REST/WebSocket gateway (placeholder)
-│   └── service_config.yaml         # Central config: ports, tokens, routing
-│
-├── openclaw/                # Inference worker configuration and launcher
-│   ├── openclaw_config.yaml        # Model, memory, workers, sampling
-│   ├── models/
-│   │   └── README.md               # Where to place local model files
-│   └── run_openclaw.sh             # Start OpenClaw with GB10-optimised flags
-│
-├── identity/                # System identity and naming
-│   ├── gracey_identity.md          # Who/what Gracey-GB10 is and why
-│   └── service_usernames.md        # Recommended handles across platforms
-│
-├── docs/                    # Project documentation
-│   ├── architecture_overview.md    # How components interact
-│   └── roadmap.md                  # Future expansion plans
-│
-├── README.md                # This file
-├── .gitignore
-└── LICENSE
+|- configs/
+|  |- gracey_stack.yaml                 # Global stack mode and control-plane settings
+|
+|- platform/
+|  |- control/
+|  |  |- nemoclaw_profile.yaml          # NemoClaw/OpenShell control profile
+|  |  |- openshell_policy.yaml          # Baseline policy scaffold
+|  |- inference/
+|  |  |- role_registry.yaml             # fast/heavy/thinker/architect role map
+|  |  |- runtimes/
+|  |     |- vllm/profile.yaml           # vLLM runtime profile scaffold
+|  |     |- trtllm/profile.yaml         # TensorRT-LLM runtime profile scaffold
+|  |- router/
+|     |- routing_policy.yaml            # Role routing and fallback policy
+|
+|- interfaces/
+|  |- api/
+|  |  |- app/main.py                    # Mockable API service scaffold
+|  |  |- requirements.txt
+|  |- agents/
+|     |- telegram/
+|        |- bot_stub.py                 # Telegram bridge scaffold
+|        |- requirements.txt
+|
+|- ops/
+|  |- deploy/docker-compose.mock.yml    # Mock deployment template
+|  |- observability/prometheus.yml      # Observability scaffold
+|
+|- scripts/
+|  |- run_api_mock.ps1                  # Windows mock API launcher
+|  |- run_api_mock.sh                   # Linux mock API launcher
+|
+|- docs/
+|  |- architecture_overview.md
+|  |- migration_nemoclaw.md
+|  |- roadmap.md
+|  |- no_hardware_development.md
+|
+|- benchmarks/
+|- identity/
+|- infrastructure/                      # Legacy install/setup docs retained
+|- openclaw/                            # Legacy OpenClaw assets retained
+|- services/                            # Legacy services layout retained
+|- secrets/                             # Do not modify or delete protected files
+|- .gitignore
+|- LICENSE
+|- README.md
 ```
 
 ---
 
-## Quick-Start
+## Quick Start Without Hardware
 
-> **Prerequisites:** GB10 hardware with Ubuntu 22.04+ installed.
+### 1. Start the mock API (Windows PowerShell)
 
-### 1. Prepare the System
-
-Follow [`infrastructure/setup_gb10_environment.md`](infrastructure/setup_gb10_environment.md)
-to install NVIDIA drivers, CUDA 12.6, Python 3.11, and set required environment variables.
-
-### 2. Install OpenClaw
-
-```bash
-chmod +x infrastructure/openclaw_install.sh
-./infrastructure/openclaw_install.sh
+```powershell
+./scripts/run_api_mock.ps1
 ```
 
-### 3. Configure OpenClaw
+### 2. Verify health endpoint
 
-Edit [`openclaw/openclaw_config.yaml`](openclaw/openclaw_config.yaml) to point
-`model.path` at your local model directory (see
-[`openclaw/models/README.md`](openclaw/models/README.md) for download instructions).
-
-### 4. Configure Services
-
-Copy and populate the service secrets (never commit real tokens):
-
-```bash
-cp services/service_config.yaml .env.example
-# Edit .env with your real TELEGRAM_BOT_TOKEN, API_GATEWAY_AUTH_TOKEN, etc.
+```powershell
+Invoke-WebRequest http://localhost:8080/healthz
 ```
 
-### 5. Start OpenClaw
+### 3. Test chat route
 
-```bash
-chmod +x openclaw/run_openclaw.sh
-./openclaw/run_openclaw.sh
+```powershell
+Invoke-RestMethod http://localhost:8080/v1/chat -Method Post -ContentType application/json -Body '{"message":"hello","user_id":"dev","role_hint":"auto"}'
 ```
 
-### 6. Connect the Telegram Bot
+### 4. Optional Linux/macOS start
 
-Follow [`services/telegram_bot/README.md`](services/telegram_bot/README.md) to
-register your bot with BotFather and start the bot service.
+```bash
+chmod +x scripts/run_api_mock.sh
+./scripts/run_api_mock.sh
+```
+
+---
+
+## Strategy Summary
+
+### Four Assistants
+
+- `fast`: Qwen3-30B-A3B NVFP4
+- `heavy`: Qwen3-32B NVFP4
+- `thinker`: Phi-4-Reasoning-Plus NVFP4
+- `architect`: GPT-OSS-120B MXFP4 and Llama-3.3-70B NVFP4
+
+Runtime choice is role-specific and benchmark-driven:
+
+- vLLM and TensorRT-LLM are both first-class.
+- Runtime winner per role is chosen by p95 latency, first-token latency,
+  throughput, memory headroom, and cold-start penalty.
+- Benchmark numbers alone are not enough; policy and reliability constraints
+    are also part of runtime selection.
 
 ---
 
 ## Documentation
 
 | Document | Description |
-|----------|-------------|
-| [Architecture Overview](docs/architecture_overview.md) | Component interaction diagram and data flow |
-| [Roadmap](docs/roadmap.md) | Planned features and multi-node expansion |
-| [GB10 Setup](infrastructure/setup_gb10_environment.md) | Driver, CUDA, and Python setup |
-| [Hardware Profile](infrastructure/hardware_profile.json) | GB10 specs and OpenClaw limits |
-| [System Identity](identity/gracey_identity.md) | Who Gracey-GB10 is and its lineage |
+| -------- | ----------- |
+| [Architecture Overview](docs/architecture_overview.md) | Refactored control/inference/router/interface design |
+| [Setup Playbook](docs/setup_gracey_playbook.md) | Detailed installation and bring-up guide for mock and Spark phases |
+| [Setup Checklist](docs/setup_gracey_checklist.md) | Step-by-step execution checklist for setup and validation |
+| [Migration Plan](docs/migration_nemoclaw.md) | Hard-reset migration notes and progress |
+| [Roadmap](docs/roadmap.md) | Refactor milestones from scaffold to production |
+| [No-Hardware Development](docs/no_hardware_development.md) | Development flow before DGX Spark arrives |
+| [Hardware Profile](infrastructure/hardware_profile.json) | GB10 specs reference |
+| [System Identity](identity/gracey_identity.md) | Gracey lineage and purpose |
 
 ---
 
 ## Security
 
-- All secrets are environment variables — never committed to this repository.
-- The OpenClaw worker binds to `127.0.0.1` only; the API Gateway handles external access.
-- See [`services/service_config.yaml`](services/service_config.yaml) for placeholder structure.
+- Keep all real secrets in environment variables, never in repository files.
+- Preserve `secrets/GraYc.txt` exactly; it is a protected artifact.
+- Keep inference workers on localhost behind the API/router edge.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).
 
 ---
 
 ## Operator
 
 **Dracken Inc.** · [github.com/Dracken-Inc](https://github.com/Dracken-Inc)
-

@@ -1,66 +1,28 @@
 # service_config.yaml
-# Central configuration for all Gracey-GB10 services.
+# Deprecated compatibility config retained for legacy references.
 #
-# IMPORTANT: This file uses placeholder values only.
-# Real secrets must NEVER be committed to version control.
-# Use environment variables or a secrets manager instead.
-# Values in the form ${VAR_NAME} are resolved at runtime from the environment.
-#
-# To apply: source your .env file first, then start each service.
+# Primary stack configuration now lives in:
+# - configs/gracey_stack.yaml
+# - platform/inference/role_registry.yaml
+# - platform/router/routing_policy.yaml
+# - platform/control/nemoclaw_profile.yaml
 
-# ── OpenClaw Worker ───────────────────────────────────────────────────────────
-openclaw:
-  config_path: "/opt/gracey/openclaw/openclaw_config.yaml"
-  host: "127.0.0.1"
-  port: 9000
-  workers: 4
-  startup_timeout_seconds: 120
+meta:
+  status: "deprecated"
+  migration_doc: "docs/migration_nemoclaw.md"
+  replacement_stack_config: "configs/gracey_stack.yaml"
 
-# ── API Gateway ───────────────────────────────────────────────────────────────
-api_gateway:
-  host: "0.0.0.0"
-  port: 8080
-  workers: 2
-  # Token clients must supply in the Authorization: Bearer <token> header.
-  # Set via environment: export API_GATEWAY_AUTH_TOKEN="<strong-random-token>"
-  auth_token: "${API_GATEWAY_AUTH_TOKEN}"
-  cors_origins:
-    - "http://localhost:3000"
-  rate_limit:
-    requests_per_minute: 60
+compatibility:
+  api_gateway:
+    host: "0.0.0.0"
+    port: 8080
+    auth_token: "${API_GATEWAY_AUTH_TOKEN}"
+    rate_limit_requests_per_minute: 60
+  telegram:
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    bot_username: "GraceyGB10Bot"
+    api_url: "http://localhost:8080/v1/chat"
 
-# ── Telegram Bot ──────────────────────────────────────────────────────────────
-telegram:
-  # BotFather token — set via: export TELEGRAM_BOT_TOKEN="<your-token>"
-  bot_token: "${TELEGRAM_BOT_TOKEN}"
-  # Username of the bot (without @)
-  bot_username: "GraceyGB10Bot"
-  # The API gateway URL the bot forwards messages to
-  openclaw_api_url: "http://localhost:8080/v1/chat"
-  # Maximum response time before the bot sends a "thinking…" placeholder
-  response_timeout_seconds: 30
-
-# ── Logging ───────────────────────────────────────────────────────────────────
-logging:
-  level: "INFO"            # DEBUG | INFO | WARNING | ERROR
-  log_dir: "/var/log/gracey"
-  max_size_mb: 100
-  backup_count: 5
-  format: "json"           # json | text
-
-# ── Service Routing ───────────────────────────────────────────────────────────
-# Describes which internal services handle which request paths.
-routing:
-  - source: "telegram_bot"
-    target: "api_gateway"
-    path_prefix: "/v1/chat"
-  - source: "api_gateway"
-    target: "openclaw"
-    path_prefix: "/"
-
-# ── Health Monitoring ─────────────────────────────────────────────────────────
-monitoring:
-  healthcheck_interval_seconds: 30
-  alert_email: "${ALERT_EMAIL}"         # Optional: set to receive failure alerts
-  prometheus_enabled: false             # Set true when Prometheus is configured
-  prometheus_port: 9090
+notes:
+  - "Do not add new runtime settings here. Use configs/gracey_stack.yaml instead."
+  - "Legacy OpenClaw values were removed during NemoClaw-first refactor."

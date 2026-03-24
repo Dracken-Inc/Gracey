@@ -1,0 +1,22 @@
+[
+  {
+    "id": "fast-001",
+    "role": "fast",
+    "message": "Summarize this bug report in three bullets: API latency spikes after deploy."
+  },
+  {
+    "id": "thinker-001",
+    "role": "thinker",
+    "message": "Explain why an O(n log n) algorithm can outperform O(n) in practice under cache pressure."
+  },
+  {
+    "id": "heavy-001",
+    "role": "heavy",
+    "message": "Given this long architecture description, identify hidden coupling risks and propose refactors."
+  },
+  {
+    "id": "architect-001",
+    "role": "architect",
+    "message": "Design a phased migration strategy for replacing a monolith with policy-governed services."
+  }
+]

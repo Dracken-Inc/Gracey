@@ -1,126 +1,120 @@
-# Gracey-GB10 Architecture Overview
+# Gracey Architecture Overview
 
-This document explains how the system components interact to deliver local AI
-inference through the Gracey-GB10 node.
-
----
+This document describes the refactored Gracey architecture designed for
+NemoClaw-first operations with benchmark-driven runtime selection between vLLM
+and TensorRT-LLM.
 
 ## High-Level Diagram
 
-```
+```text
 ┌──────────────────────────────────────────────────────────┐
 │                      External Clients                     │
-│  Telegram App │  Web Browser │  CLI / API consumer       │
-└───────┬───────┴──────┬───────┴────────────────┬──────────┘
-        │              │                         │
-        ▼              ▼                         ▼
-┌───────────────┐  ┌─────────────────────────────────────┐
-│ Telegram Bot  │  │          API Gateway                │
-│ (python-      │  │    FastAPI · host 0.0.0.0:8080      │
-│  telegram-bot)│  │    Auth · Rate Limiting · Routing   │
-└───────┬───────┘  └──────────────┬──────────────────────┘
-        │                          │
-        └──────────┬───────────────┘
-                   │  HTTP POST /v1/chat
-                   ▼
-        ┌──────────────────────┐
-        │   OpenClaw Worker    │
-        │  127.0.0.1:9000      │
-        │  Workers: 4          │
-        │  Flash Attention 3   │
-        └──────────┬───────────┘
-                   │  PyTorch / CUDA
-                   ▼
-        ┌──────────────────────┐
-        │   GB10 Hardware      │
-        │  Grace CPU  72 cores │
-        │  Blackwell GPU       │
-        │  128 GB unified RAM  │
-        └──────────────────────┘
+│  Telegram App │  Web UI │  CLI / API consumers           │
+└───────┬───────┴──────┬──┴───────────────┬───────────────┘
+        │              │                  │
+        ▼              ▼                  ▼
+┌──────────────────────────────────────────────────────────┐
+│                 Interface Plane                           │
+│     API Service (FastAPI) + Agent Connectors             │
+└───────────────────────────┬──────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                     Router Plane                          │
+│  Classifier + Role Routing + Fallback + SLO Policies     │
+└──────────────┬──────────────┬──────────────┬─────────────┘
+               │              │              │
+               ▼              ▼              ▼
+         fast/heavy       thinker        architect
+               \             |              /
+                \            |             /
+                 ▼           ▼            ▼
+┌──────────────────────────────────────────────────────────┐
+│                    Inference Plane                        │
+│   vLLM workers  +  TensorRT-LLM workers (role-assigned)  │
+└───────────────────────────┬──────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                     Control Plane                         │
+│      NemoClaw + OpenShell policy + lifecycle controls    │
+└───────────────────────────┬──────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                    DGX Spark / GB10                       │
+│       Blackwell GPU + 128 GB unified memory              │
+└──────────────────────────────────────────────────────────┘
 ```
 
----
+## Planes and Responsibilities
 
-## Component Descriptions
+### 1. Control Plane (`platform/control/`)
 
-### 1. Telegram Bot (`services/telegram_bot/`)
+- Uses NemoClaw as the primary operational framework.
+- Defines sandbox and egress controls via OpenShell policy.
+- Handles lifecycle operations and policy enforcement.
 
-- Written in Python using `python-telegram-bot`.
-- Receives messages from users via the Telegram API (long-polling or webhook).
-- Forwards each message as a JSON POST to the API Gateway.
-- Returns the inference response to the user.
-- Runs as a systemd service (`gracey-telegram-bot`).
+### 2. Inference Plane (`platform/inference/`)
 
-### 2. API Gateway (`services/api_gateway/`)
+- Hosts model roles and runtime assignments.
+- Supports both vLLM and TensorRT-LLM.
+- Runtime winner is determined by benchmark data per role.
 
-- FastAPI application listening on `0.0.0.0:8080`.
-- Handles authentication (Bearer token), rate limiting, and request validation.
-- Translates incoming REST requests into the format expected by OpenClaw.
-- Proxies requests to the OpenClaw worker at `127.0.0.1:9000`.
-- Supports both standard JSON responses and Server-Sent Events (SSE) streaming.
-- Runs as a systemd service (`gracey-api`).
+### 3. Router Plane (`platform/router/`)
 
-### 3. OpenClaw Worker (`openclaw/`)
+- Classifies request complexity and intent.
+- Routes requests to `fast`, `heavy`, `thinker`, or `architect` roles.
+- Applies fallback behavior and timeout budgets.
 
-- Runs the AI model using the OpenClaw inference framework.
-- Configured via `openclaw/openclaw_config.yaml`.
-- Exposes a local HTTP interface on `127.0.0.1:9000` (not publicly accessible).
-- Manages GPU memory, KV-cache, batching, and worker threads.
-- Takes advantage of GB10 hardware features:
-  - Flash Attention 3
-  - Unified CPU+GPU memory (no data copies between separate pools)
-  - NVLink bandwidth
-- Runs as a systemd service (`gracey-openclaw`).
+### 4. Interface Plane (`interfaces/`)
 
-### 4. GB10 Hardware
+- API service provides `/v1/chat`, `/v1/route`, and health endpoints.
+- Telegram agent connector bridges user traffic into API.
+- API and Telegram are intentionally redesigned in this refactor.
 
-- NVIDIA Grace Blackwell GB10 superchip.
-- 72-core Grace ARM CPU + Blackwell GPU sharing 128 GB LPDDR5X.
-- PyTorch accesses the GPU via CUDA 12.6+.
-- Full hardware profile in `infrastructure/hardware_profile.json`.
+## Role Catalog
 
----
+- `fast`: `nvidia/Qwen3-30B-A3B-FP4`
+- `heavy`: `nvidia/Qwen3-32B-FP4`
+- `thinker`: `nvidia/Phi-4-reasoning-plus-NVFP4`
+- `architect`: `openai/gpt-oss-120b` and `nvidia/Llama-3.3-70B-Instruct-NVFP4`
 
 ## Data Flow
 
-```
-User message (Telegram)
-  → Telegram Bot
-    → API Gateway (auth check, rate limit)
-      → OpenClaw Worker (inference)
-        → GB10 GPU (model execution)
-      ← OpenClaw response (tokens)
-    ← API Gateway (JSON / SSE response)
-  ← Telegram Bot (reply message)
-← User (reply in Telegram)
+```text
+User request
+  -> Interface plane (API / Telegram)
+  -> Router plane (classify and select role)
+  -> Inference plane (runtime-selected worker)
+  -> Model output
+  -> Interface response
 ```
 
----
+## Runtime Selection Policy
 
-## Configuration Files
+Runtime assignment is evaluated role-by-role with benchmark metrics:
 
-| File | Purpose |
-|------|---------|
-| `services/service_config.yaml` | Ports, tokens, routing for all services |
-| `openclaw/openclaw_config.yaml` | Model, memory, worker, sampling settings |
-| `infrastructure/hardware_profile.json` | GB10 capability reference |
+- first-token latency
+- p95 response latency
+- tokens/sec throughput
+- memory headroom
+- cold-start penalty
 
----
+vLLM is the default initial candidate for rapid integration and API
+compatibility. TensorRT-LLM is promoted for a role if benchmark results are
+better on the target hardware.
+
+## Hardware Pending Mode
+
+Until hardware is available, Gracey runs in `mock` mode:
+
+- API returns scaffold responses.
+- Router rules are testable with static policy files.
+- Role registry can be validated without loading real models.
 
 ## Security Model
 
-- The OpenClaw worker is **only reachable on localhost** (127.0.0.1:9000).
-- External traffic enters only through the API Gateway, which enforces
-  authentication before forwarding requests.
-- All secrets (bot tokens, auth tokens) are stored as environment variables
-  and never committed to version control.
-
----
-
-## Service Dependencies
-
-```
-gracey-openclaw  ←── must start before ──→  gracey-api  ←── must start before ──→  gracey-telegram-bot
-```
-
-Systemd `After=` directives enforce this order automatically.
+- Keep real secrets in environment variables only.
+- Preserve protected file `secrets/GraYc.txt` unchanged.
+- Keep inference endpoints internal and route traffic through policy-aware edge services.
