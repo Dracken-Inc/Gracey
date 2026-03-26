@@ -19,6 +19,47 @@ This playbook covers:
 - Four-assistant runtime bring-up and validation
 - Rollback and troubleshooting basics
 
+## Recommended Root Folder Layout
+
+If you begin at `/`, use this standard layout:
+
+```text
+/
+|- opt/
+|  |- gracey/          # Git repo root
+|- var/
+|  |- log/
+|     |- gracey/       # Runtime and service logs
+|- tmp/
+|  |- gracey-bootstrap/
+```
+
+Detailed layout guide: `docs/root_folder_layout.md`.
+
+## One-Command Bootstrap Script
+
+Run this as root from `/` (or any directory):
+
+```bash
+sudo bash /path/to/Gracey/scripts/bootstrap_gracey_spark.sh \
+  --repo-url <your-gracey-repo-url> \
+  --branch main \
+  --install-dir /opt/gracey \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw
+```
+
+What the script does:
+
+- installs base packages
+- creates `/opt/gracey`, `/var/log/gracey`, and `/tmp/gracey-bootstrap`
+- clones or updates Gracey repo
+- validates required files
+- creates local `.env` from `.env.example` if missing
+- creates API virtual environment and installs requirements
+- optionally installs NemoClaw/OpenShell
+- writes summary to `/tmp/gracey-bootstrap/summary.txt`
+
 This playbook does not modify protected secrets content. Keep
 `secrets/GraYc.txt` unchanged.
 

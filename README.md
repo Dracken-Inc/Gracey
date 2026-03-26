@@ -131,6 +131,7 @@ Runtime choice is role-specific and benchmark-driven:
 | [Setup Playbook](docs/setup_gracey_playbook.md) | Detailed installation and bring-up guide for mock and Spark phases |
 | [Setup Checklist](docs/setup_gracey_checklist.md) | Step-by-step execution checklist for setup and validation |
 | [Node Runbook](docs/promaxgb10-4afb_runbook.md) | Command-driven runbook for host `promaxgb10-4afb.local` |
+| [Root Folder Layout](docs/root_folder_layout.md) | Recommended filesystem layout and bootstrap usage from `/` |
 | [Migration Plan](docs/migration_nemoclaw.md) | Hard-reset migration notes and progress |
 | [Roadmap](docs/roadmap.md) | Refactor milestones from scaffold to production |
 | [No-Hardware Development](docs/no_hardware_development.md) | Development flow before DGX Spark arrives |
