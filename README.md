@@ -137,6 +137,9 @@ Runtime choice is role-specific and benchmark-driven:
 | [No-Hardware Development](docs/no_hardware_development.md) | Development flow before DGX Spark arrives |
 | [Accounts Identity Config](configs/accounts_identity.yaml) | Public account names and service handles for this deployment |
 | [.env Template](.env.example) | Required key/token variables for local node configuration |
+| [Spark Preflight Script](scripts/preflight_spark.sh) | Verifies host readiness (GPU, Docker, Tailscale, NemoClaw) |
+| [Env Validation Script](scripts/validate_env.sh) | Fails fast when `.env` contains missing or placeholder values |
+| [API Start Script](scripts/start_gracey_api.sh) | Starts API in strict validated mode using local `.env` |
 | [Hardware Profile](infrastructure/hardware_profile.json) | GB10 specs reference |
 | [System Identity](identity/gracey_identity.md) | Gracey lineage and purpose |
 

@@ -49,6 +49,12 @@ sudo bash /path/to/Gracey/scripts/bootstrap_gracey_spark.sh \
   --install-nemoclaw
 ```
 
+If repo already exists at `/opt/gracey`, repo URL is optional:
+
+```bash
+sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh --install-nemoclaw
+```
+
 What the script does:
 
 - installs base packages
@@ -59,6 +65,17 @@ What the script does:
 - creates API virtual environment and installs requirements
 - optionally installs NemoClaw/OpenShell
 - writes summary to `/tmp/gracey-bootstrap/summary.txt`
+
+## Mandatory Preflight and Env Validation
+
+Run these before starting services:
+
+```bash
+/opt/gracey/scripts/preflight_spark.sh promaxgb10-4afb.local
+/opt/gracey/scripts/validate_env.sh /opt/gracey/.env
+```
+
+If either command fails, fix issues before continuing.
 
 This playbook does not modify protected secrets content. Keep
 `secrets/GraYc.txt` unchanged.
@@ -280,7 +297,7 @@ set +a
 Start mock once first to validate repo integrity:
 
 ```bash
-./scripts/run_api_mock.sh
+/opt/gracey/scripts/start_gracey_api.sh /opt/gracey
 ```
 
 ### B5. Switch to hardware mode

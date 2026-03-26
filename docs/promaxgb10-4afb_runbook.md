@@ -18,6 +18,12 @@ docker --version
 tailscale status
 ```
 
+Run bundled preflight:
+
+```bash
+/opt/gracey/scripts/preflight_spark.sh promaxgb10-4afb.local
+```
+
 Expected:
 
 - Host resolves as `promaxgb10-4afb.local`
@@ -53,6 +59,12 @@ source .env
 set +a
 ```
 
+Validate env before start:
+
+```bash
+/opt/gracey/scripts/validate_env.sh /opt/gracey/.env
+```
+
 Reference files:
 
 - `configs/accounts_identity.yaml` for account names and handles
@@ -66,7 +78,7 @@ Reference files:
 Start API service:
 
 ```bash
-./scripts/run_api_mock.sh
+/opt/gracey/scripts/start_gracey_api.sh /opt/gracey
 ```
 
 Note: current API scaffold is runtime-agnostic and safe for initial validation.

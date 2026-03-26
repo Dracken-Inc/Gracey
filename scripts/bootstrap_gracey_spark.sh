@@ -14,7 +14,7 @@ print_help() {
 Usage: bootstrap_gracey_spark.sh [options]
 
 Options:
-  --repo-url <url>           Git repo URL for Gracey (required)
+  --repo-url <url>           Git repo URL for Gracey (optional if repo already exists)
   --branch <name>            Branch to pull (default: main)
   --install-dir <path>       Install root (default: /opt/gracey)
   --node-hostname <name>     Node hostname (default: promaxgb10-4afb.local)
@@ -64,8 +64,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$REPO_URL" ]] || fail "--repo-url is required"
-
 if [[ "$(id -u)" -ne 0 ]]; then
   fail "Run as root (use sudo)."
 fi
@@ -97,8 +95,20 @@ if [[ -d "$INSTALL_DIR/.git" ]]; then
   sudo -u "$OPERATOR_USER" git -C "$INSTALL_DIR" checkout "$BRANCH"
   sudo -u "$OPERATOR_USER" git -C "$INSTALL_DIR" pull --ff-only origin "$BRANCH"
 else
-  log "Cloning repository"
-  sudo -u "$OPERATOR_USER" git clone --branch "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
+  if [[ -n "$REPO_URL" ]]; then
+    log "Cloning repository"
+    sudo -u "$OPERATOR_USER" git clone --branch "$BRANCH" "$REPO_URL" "$INSTALL_DIR"
+  else
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    SOURCE_REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+    if [[ -d "$SOURCE_REPO_DIR/.git" ]]; then
+      log "No repo URL provided; copying local repo from $SOURCE_REPO_DIR"
+      rsync -a --delete --exclude '.git' "$SOURCE_REPO_DIR/" "$INSTALL_DIR/"
+      chown -R "$OPERATOR_USER":"$OPERATOR_USER" "$INSTALL_DIR"
+    else
+      fail "No git repo at $INSTALL_DIR and --repo-url not provided"
+    fi
+  fi
 fi
 
 REQUIRED_FILES=(
@@ -130,6 +140,11 @@ if [[ ! -d "$API_DIR/.venv" ]]; then
 fi
 sudo -u "$OPERATOR_USER" "$API_DIR/.venv/bin/python" -m pip install --upgrade pip
 sudo -u "$OPERATOR_USER" "$API_DIR/.venv/bin/pip" install -r "$API_DIR/requirements.txt"
+
+if [[ -f "$INSTALL_DIR/scripts/validate_env.sh" ]]; then
+  log "Running environment validation"
+  sudo -u "$OPERATOR_USER" bash "$INSTALL_DIR/scripts/validate_env.sh" "$INSTALL_DIR/.env" || true
+fi
 
 if [[ "$INSTALL_NEMOCLAW" == "true" ]]; then
   if command -v nemoclaw >/dev/null 2>&1; then
