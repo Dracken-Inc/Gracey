@@ -237,7 +237,15 @@ EOF
 if [[ "$RUN_ONBOARD" == "true" ]]; then
   if nemoclaw --help 2>/dev/null | grep -qi onboard; then
     log "Running nemoclaw onboard"
-    nemoclaw onboard
+    if nemoclaw onboard --help 2>/dev/null | grep -q -- '--no-verify'; then
+      if ! nemoclaw onboard --no-verify; then
+        log "WARNING: nemoclaw onboard failed; continuing with local vLLM profile configuration"
+      fi
+    else
+      if ! nemoclaw onboard; then
+        log "WARNING: nemoclaw onboard failed; continuing with local vLLM profile configuration"
+      fi
+    fi
   else
     log "WARNING: 'nemoclaw onboard' not available in this CLI version"
   fi
