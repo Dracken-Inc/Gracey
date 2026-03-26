@@ -1,12 +1,13 @@
 # Gracey Setup Playbook
 
 This playbook provides a detailed, practical path for installing and operating
-Gracey on NVIDIA DGX Spark.
+Gracey on NVIDIA DGX Spark with NemoClaw/OpenClaw as the primary multi-agent
+control path.
 
 It is organized as two tracks:
 
-- Track A: no-hardware development (can be done today)
-- Track B: Spark hardware bring-up (execute when Spark is available)
+- Track A: NemoClaw/OpenClaw hardware setup (primary)
+- Track B: optional mock API development path
 
 ## Scope
 
@@ -36,9 +37,47 @@ If you begin at `/`, use this standard layout:
 
 Detailed layout guide: `docs/root_folder_layout.md`.
 
-## One-Command Bootstrap Script
+## Primary One-Command Setup (NemoClaw/OpenClaw)
 
-Run this as root from `/` (or any directory):
+If the node is empty and `/opt/gracey` does not exist yet, scaffold it first:
+
+```bash
+sudo apt-get update -y
+sudo apt-get install -y git curl ca-certificates
+sudo mkdir -p /opt
+cd /opt
+sudo git clone <your-gracey-repo-url> gracey
+sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh \
+  --repo-url <your-gracey-repo-url> \
+  --branch main \
+  --install-dir /opt/gracey \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw \
+  --run-nemoclaw-setup
+```
+
+Run this as root after cloning Gracey into `/opt/gracey`:
+
+```bash
+sudo bash /opt/gracey/scripts/setup_nemoclaw_graceyblackwell.sh \
+  --install-dir /opt/gracey \
+  --env-file /opt/gracey/.env \
+  --secrets-file /opt/gracey/secrets/GraYc.txt \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw \
+  --onboard
+```
+
+This command configures:
+
+- four-assistant multi-agent topology (`fast`, `heavy`, `thinker`, `architect`)
+- vLLM backend as default runtime
+- Ollama disabled
+- NemoClaw profile and role registry with vLLM runtime lock
+
+## Bootstrap Script (Host Prep)
+
+Run this as root from `/` (or any directory) when preparing a fresh host:
 
 ```bash
 sudo bash /path/to/Gracey/scripts/bootstrap_gracey_spark.sh \
@@ -46,23 +85,24 @@ sudo bash /path/to/Gracey/scripts/bootstrap_gracey_spark.sh \
   --branch main \
   --install-dir /opt/gracey \
   --node-hostname promaxgb10-4afb.local \
-  --install-nemoclaw
+  --install-nemoclaw \
+  --run-nemoclaw-setup
 ```
 
 If repo already exists at `/opt/gracey`, repo URL is optional:
 
 ```bash
-sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh --install-nemoclaw
+sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh --install-nemoclaw --run-nemoclaw-setup
 ```
 
-What the script does:
+What the bootstrap script does:
 
 - installs base packages
 - creates `/opt/gracey`, `/var/log/gracey`, and `/tmp/gracey-bootstrap`
 - clones or updates Gracey repo
 - validates required files
 - creates local `.env` from `.env.example` if missing
-- creates API virtual environment and installs requirements
+- creates API virtual environment and installs requirements (optional mock path)
 - optionally installs NemoClaw/OpenShell
 - writes summary to `/tmp/gracey-bootstrap/summary.txt`
 
@@ -142,9 +182,45 @@ Before starting, verify these files exist:
 - `scripts/run_api_mock.sh`
 - `scripts/run_api_mock.ps1`
 
-## Track A - No-Hardware Development
+## Track A - NemoClaw/OpenClaw Hardware Setup (Primary)
 
-### A1. Prepare local dev environment
+### A1. Run preflight and env validation
+
+```bash
+/opt/gracey/scripts/preflight_spark.sh promaxgb10-4afb.local
+/opt/gracey/scripts/validate_env.sh /opt/gracey/.env
+```
+
+### A2. Apply NemoClaw multi-agent vLLM setup
+
+```bash
+sudo bash /opt/gracey/scripts/setup_nemoclaw_graceyblackwell.sh \
+  --install-dir /opt/gracey \
+  --env-file /opt/gracey/.env \
+  --secrets-file /opt/gracey/secrets/GraYc.txt \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw \
+  --onboard
+```
+
+### A3. Verify control plane
+
+```bash
+nemoclaw --help
+openshell --help
+nemoclaw <assistant-name> status
+```
+
+### A4. Verify vLLM backend lock and role map
+
+```bash
+grep -n "runtime: \"vllm\"" /opt/gracey/platform/inference/role_registry.yaml
+grep -n "enabled: false" /opt/gracey/platform/control/nemoclaw_profile.yaml
+```
+
+## Track B - Optional Mock API Development
+
+### B1. Prepare local dev environment
 
 Linux/macOS:
 
@@ -160,7 +236,7 @@ Set-Location D:\AI\Gracey
 ./scripts/run_api_mock.ps1
 ```
 
-### A2. Validate API health
+### B2. Validate API health
 
 ```bash
 curl http://localhost:8080/healthz
@@ -173,7 +249,7 @@ Expected indicators:
 - `assistants_count: 4`
 - `resource_lanes` includes `little-indian` and `big-indian`
 
-### A3. Validate routing and classifiers
+### B3. Validate routing and classifiers
 
 ```bash
 curl -X POST http://localhost:8080/v1/route \
@@ -189,7 +265,7 @@ Confirm response includes:
 - `classifier_used`
 - `confidence`
 
-### A4. Validate chat path and checksum behavior
+### B4. Validate chat path and checksum behavior
 
 ```bash
 curl -X POST http://localhost:8080/v1/chat \
@@ -203,7 +279,7 @@ Confirm response includes:
 - `validation.score`
 - checks under `validation.checks`
 
-## Track B - DGX Spark Bring-Up
+## Legacy Spark Bring-Up Notes
 
 Run this track when hardware is available.
 

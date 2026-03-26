@@ -8,6 +8,7 @@ BRANCH="main"
 INSTALL_DIR="/opt/gracey"
 NODE_HOSTNAME="promaxgb10-4afb.local"
 INSTALL_NEMOCLAW="false"
+RUN_NEMO_SETUP="false"
 
 print_help() {
   cat <<'EOF'
@@ -19,6 +20,7 @@ Options:
   --install-dir <path>       Install root (default: /opt/gracey)
   --node-hostname <name>     Node hostname (default: promaxgb10-4afb.local)
   --install-nemoclaw         Install NemoClaw/OpenShell if not present
+  --run-nemoclaw-setup       Run setup_nemoclaw_graceyblackwell.sh after bootstrap
   -h, --help                 Show this help
 EOF
 }
@@ -52,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --install-nemoclaw)
       INSTALL_NEMOCLAW="true"
+      shift
+      ;;
+    --run-nemoclaw-setup)
+      RUN_NEMO_SETUP="true"
       shift
       ;;
     -h|--help)
@@ -155,6 +161,18 @@ if [[ "$INSTALL_NEMOCLAW" == "true" ]]; then
   fi
 fi
 
+if [[ "$RUN_NEMO_SETUP" == "true" ]]; then
+  SETUP_SCRIPT="$INSTALL_DIR/scripts/setup_nemoclaw_graceyblackwell.sh"
+  [[ -f "$SETUP_SCRIPT" ]] || fail "Missing setup script: $SETUP_SCRIPT"
+  log "Running NemoClaw multi-agent setup"
+  bash "$SETUP_SCRIPT" \
+    --install-dir "$INSTALL_DIR" \
+    --env-file "$INSTALL_DIR/.env" \
+    --secrets-file "$INSTALL_DIR/secrets/GraYc.txt" \
+    --node-hostname "$NODE_HOSTNAME" \
+    --onboard
+fi
+
 log "Writing bootstrap summary"
 cat > /tmp/gracey-bootstrap/summary.txt <<EOF
 Node hostname target: $NODE_HOSTNAME
@@ -162,12 +180,13 @@ Install dir: $INSTALL_DIR
 Operator user: $OPERATOR_USER
 Repo branch: $BRANCH
 NemoClaw install requested: $INSTALL_NEMOCLAW
+NemoClaw setup executed: $RUN_NEMO_SETUP
 
 Next steps:
 1) Edit $INSTALL_DIR/.env with real keys and tokens.
 2) Load env: set -a; source $INSTALL_DIR/.env; set +a
-3) Run: $INSTALL_DIR/scripts/run_api_mock.sh
-4) Validate: curl http://$NODE_HOSTNAME:8080/healthz
+3) Run: sudo bash $INSTALL_DIR/scripts/bootstrap_gracey_spark.sh --install-dir $INSTALL_DIR --node-hostname $NODE_HOSTNAME --install-nemoclaw --run-nemoclaw-setup
+4) Optional adapter API: $INSTALL_DIR/scripts/start_gracey_api.sh $INSTALL_DIR
 EOF
 
 log "Bootstrap complete"

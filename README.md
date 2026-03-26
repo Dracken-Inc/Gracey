@@ -75,9 +75,53 @@ Gracey/
 
 ---
 
-## Quick Start Without Hardware
+## Primary Setup (NemoClaw + OpenClaw + vLLM)
 
-### 1. Start the mock API (Windows PowerShell)
+### Cold Start From Empty Hardware
+
+If the node has no Gracey folders yet, run this first:
+
+```bash
+sudo apt-get update -y
+sudo apt-get install -y git curl ca-certificates
+sudo mkdir -p /opt
+cd /opt
+sudo git clone <your-gracey-repo-url> gracey
+sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh \
+    --repo-url <your-gracey-repo-url> \
+    --branch main \
+    --install-dir /opt/gracey \
+    --node-hostname promaxgb10-4afb.local \
+    --install-nemoclaw \
+    --run-nemoclaw-setup
+```
+
+This creates folders, clones/updates repo, creates `.env` from template, and
+applies NemoClaw multi-agent vLLM configuration.
+
+Run this on your Spark node after cloning into `/opt/gracey`:
+
+```bash
+sudo bash /opt/gracey/scripts/setup_nemoclaw_graceyblackwell.sh \
+    --install-dir /opt/gracey \
+    --env-file /opt/gracey/.env \
+    --secrets-file /opt/gracey/secrets/GraYc.txt \
+    --node-hostname promaxgb10-4afb.local \
+    --install-nemoclaw \
+    --onboard
+```
+
+What this command does:
+
+- validates `.env` and secrets presence
+- configures four-assistant NemoClaw/OpenClaw profile
+- locks backend to `vLLM`
+- explicitly disables `Ollama`
+- writes runtime profile files under `/opt/gracey/.runtime`
+
+## Optional Mock API (Development Only)
+
+### 1. Start the optional mock API (Windows PowerShell)
 
 ```powershell
 ./scripts/run_api_mock.ps1
@@ -131,6 +175,7 @@ Runtime choice is role-specific and benchmark-driven:
 | [Setup Playbook](docs/setup_gracey_playbook.md) | Detailed installation and bring-up guide for mock and Spark phases |
 | [Setup Checklist](docs/setup_gracey_checklist.md) | Step-by-step execution checklist for setup and validation |
 | [Node Runbook](docs/promaxgb10-4afb_runbook.md) | Command-driven runbook for host `promaxgb10-4afb.local` |
+| [NemoClaw Setup Script](scripts/setup_nemoclaw_graceyblackwell.sh) | Primary command-line setup for GraceyBlackwell multi-agent vLLM |
 | [Root Folder Layout](docs/root_folder_layout.md) | Recommended filesystem layout and bootstrap usage from `/` |
 | [Migration Plan](docs/migration_nemoclaw.md) | Hard-reset migration notes and progress |
 | [Roadmap](docs/roadmap.md) | Refactor milestones from scaffold to production |

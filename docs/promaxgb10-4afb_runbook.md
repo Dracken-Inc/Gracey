@@ -42,11 +42,28 @@ nemoclaw onboard
 nemoclaw <assistant-name> status
 ```
 
-## 3. Gracey Bring-Up
+## 3. Gracey Bring-Up (Primary)
+
+If this is a fresh node with no Gracey folders yet:
 
 ```bash
-git clone <your-gracey-repo-url>
-cd Gracey
+sudo apt-get update -y
+sudo apt-get install -y git curl ca-certificates
+sudo mkdir -p /opt
+cd /opt
+sudo git clone <your-gracey-repo-url> gracey
+```
+
+Then run scaffold plus setup in one command:
+
+```bash
+sudo bash /opt/gracey/scripts/bootstrap_gracey_spark.sh \
+  --repo-url <your-gracey-repo-url> \
+  --branch main \
+  --install-dir /opt/gracey \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw \
+  --run-nemoclaw-setup
 ```
 
 Configure accounts and keys:
@@ -75,16 +92,38 @@ Reference files:
 - `project.mode: hardware`
 - `deployment.node_hostname: promaxgb10-4afb.local`
 
-Start API service:
+If you already ran bootstrap with `--run-nemoclaw-setup`, the multi-agent setup
+is already applied. Re-run only if needed:
+
+```bash
+sudo bash /opt/gracey/scripts/setup_nemoclaw_graceyblackwell.sh \
+  --install-dir /opt/gracey \
+  --env-file /opt/gracey/.env \
+  --secrets-file /opt/gracey/secrets/GraYc.txt \
+  --node-hostname promaxgb10-4afb.local \
+  --install-nemoclaw \
+  --onboard
+```
+
+Confirm vLLM backend lock and no Ollama:
+
+```bash
+grep -n "runtime: \"vllm\"" /opt/gracey/platform/inference/role_registry.yaml
+grep -n "ollama:" /opt/gracey/platform/control/nemoclaw_profile.yaml
+grep -n "enabled: false" /opt/gracey/platform/control/nemoclaw_profile.yaml
+```
+
+Optional only: start API compatibility service
 
 ```bash
 /opt/gracey/scripts/start_gracey_api.sh /opt/gracey
 ```
 
-Note: current API scaffold is runtime-agnostic and safe for initial validation.
-Replace launcher with runtime-backed service once vLLM/TRT-LLM workers are ready.
+This API is an adapter path and is not the control plane.
 
-## 4. Endpoint Validation
+## 4. Optional Endpoint Validation
+
+If API adapter is running:
 
 ```bash
 curl http://promaxgb10-4afb.local:8080/healthz

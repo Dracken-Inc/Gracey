@@ -27,6 +27,7 @@ Use this checklist with `docs/setup_gracey_playbook.md`.
 
 - [ ] NemoClaw installed
 - [ ] OpenShell installed
+- [ ] `setup_nemoclaw_graceyblackwell.sh` executed
 - [ ] `nemoclaw onboard` completed
 - [ ] `nemoclaw <assistant-name> status` healthy
 
@@ -36,6 +37,8 @@ Use this checklist with `docs/setup_gracey_playbook.md`.
 - [ ] Four assistants enabled
 - [ ] little-indian lane (`fast`, `thinker`) started
 - [ ] big-indian lane (`heavy`, `architect`) started
+- [ ] Role runtimes set to `vllm`
+- [ ] Ollama disabled in NemoClaw profile
 
 ## Runtime Selection
 
