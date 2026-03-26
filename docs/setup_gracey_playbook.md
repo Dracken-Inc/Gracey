@@ -22,6 +22,34 @@ This playbook covers:
 This playbook does not modify protected secrets content. Keep
 `secrets/GraYc.txt` unchanged.
 
+## Accounts and Keys Configuration
+
+Use these files together:
+
+- `.env.example`: key and token variable template (safe for git)
+- `configs/accounts_identity.yaml`: public account names and handles
+- `.env` (local only): real key material on your Spark node
+
+Create local env file on Spark:
+
+```bash
+cp .env.example .env
+```
+
+Then set at least:
+
+- `API_GATEWAY_AUTH_TOKEN`
+- `TELEGRAM_BOT_TOKEN` (you already have this)
+- `NVIDIA_API_KEY` only if using NVIDIA endpoints
+
+Load environment variables before bring-up:
+
+```bash
+set -a
+source .env
+set +a
+```
+
 ## Architecture Targets
 
 Gracey runs four assistants:
@@ -50,6 +78,8 @@ Before starting, verify these files exist:
 - `platform/control/openshell_policy.yaml`
 - `platform/inference/role_registry.yaml`
 - `platform/router/routing_policy.yaml`
+- `configs/accounts_identity.yaml`
+- `.env.example`
 - `interfaces/api/app/main.py`
 - `scripts/run_api_mock.sh`
 - `scripts/run_api_mock.ps1`
@@ -119,6 +149,16 @@ Confirm response includes:
 
 Run this track when hardware is available.
 
+### B0. Current Node Context
+
+This repository is currently targeting:
+
+- Hostname: `promaxgb10-4afb.local`
+- Internal network: Tailscale enabled
+- NVIDIA Sync: enabled
+
+Use this host as the primary endpoint during bring-up and verification.
+
 ### B1. Host prerequisites
 
 Verify:
@@ -134,6 +174,19 @@ Recommended baseline:
 - Docker installed and daemon running
 - NVIDIA runtime stack healthy
 - cgroup v2 configured per Spark guidance
+
+Also verify hostname and internal resolution:
+
+```bash
+hostname
+getent hosts promaxgb10-4afb.local || ping -c 1 promaxgb10-4afb.local
+```
+
+If Tailscale is used for access, verify peer state:
+
+```bash
+tailscale status
+```
 
 ### B2. Install NemoClaw and OpenShell
 
@@ -160,11 +213,27 @@ Then check:
 nemoclaw <assistant-name> status
 ```
 
+If the sandbox is healthy, keep a short status snapshot:
+
+```bash
+nemoclaw <assistant-name> status > /tmp/gracey_nemoclaw_status.txt
+```
+
 ### B4. Deploy Gracey on Spark
 
 ```bash
 git clone <your-gracey-repo-url>
 cd Gracey
+```
+
+Create and load your local `.env`:
+
+```bash
+cp .env.example .env
+# Edit .env and set real token values
+set -a
+source .env
+set +a
 ```
 
 Start mock once first to validate repo integrity:
@@ -177,9 +246,10 @@ Start mock once first to validate repo integrity:
 
 Edit `configs/gracey_stack.yaml`:
 
-- set `project.mode` to `hardware`
+- verify `project.mode` is `hardware`
 - keep `assistants_count: 4`
 - keep resource management strategy as `big-indian-little-indian`
+- verify `deployment.node_hostname` is `promaxgb10-4afb.local`
 
 ### B6. Bring up assistant runtimes in phases
 
@@ -220,6 +290,14 @@ Confirm:
 - expected assistant route
 - expected lane route
 - stable validation pass behavior
+
+Node-specific verification commands:
+
+```bash
+curl http://promaxgb10-4afb.local:8080/healthz
+curl -X POST http://promaxgb10-4afb.local:8080/v1/route -H "Content-Type: application/json" -d '{"message":"design a failover strategy","role_hint":"auto"}'
+curl -X POST http://promaxgb10-4afb.local:8080/v1/chat -H "Content-Type: application/json" -d '{"message":"analyze this architecture and provide phased rollout","role_hint":"auto"}'
+```
 
 ## Operational Guardrails
 

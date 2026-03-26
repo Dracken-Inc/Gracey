@@ -130,9 +130,12 @@ Runtime choice is role-specific and benchmark-driven:
 | [Architecture Overview](docs/architecture_overview.md) | Refactored control/inference/router/interface design |
 | [Setup Playbook](docs/setup_gracey_playbook.md) | Detailed installation and bring-up guide for mock and Spark phases |
 | [Setup Checklist](docs/setup_gracey_checklist.md) | Step-by-step execution checklist for setup and validation |
+| [Node Runbook](docs/promaxgb10-4afb_runbook.md) | Command-driven runbook for host `promaxgb10-4afb.local` |
 | [Migration Plan](docs/migration_nemoclaw.md) | Hard-reset migration notes and progress |
 | [Roadmap](docs/roadmap.md) | Refactor milestones from scaffold to production |
 | [No-Hardware Development](docs/no_hardware_development.md) | Development flow before DGX Spark arrives |
+| [Accounts Identity Config](configs/accounts_identity.yaml) | Public account names and service handles for this deployment |
+| [.env Template](.env.example) | Required key/token variables for local node configuration |
 | [Hardware Profile](infrastructure/hardware_profile.json) | GB10 specs reference |
 | [System Identity](identity/gracey_identity.md) | Gracey lineage and purpose |
 

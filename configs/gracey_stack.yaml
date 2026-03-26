@@ -5,8 +5,15 @@
 project:
   name: "Gracey"
   version: "0.2.0-scaffold"
-  mode: "mock" # mock | hardware
+  mode: "hardware" # mock | hardware
   assistants_count: 4
+
+deployment:
+  node_hostname: "promaxgb10-4afb.local"
+  network:
+    tailscale_enabled: true
+    nvidia_sync_enabled: true
+  api_base_url: "http://promaxgb10-4afb.local:8080"
 
 assistants:
   topology: "fixed-four"

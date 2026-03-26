@@ -1,0 +1,28 @@
+# accounts_identity.yaml
+# Public account identities and labels for Gracey.
+# Keep secrets/tokens in .env only.
+
+system:
+  full_name: "Gracey Blackwell"
+  system_name: "Gracey-GB10"
+  username_root: "gracey.gb10"
+  node_hostname: "promaxgb10-4afb.local"
+
+accounts:
+  email:
+    address: "gracey.gb10@gmail.com"
+  telegram:
+    username: "@GraceyGB10"
+    display_name: "Gracey-GB10"
+  twitter_x:
+    handle: "@GraceyGB10"
+    display_name: "Gracey-GB10"
+  instagram:
+    handle: "@gracey.gb10"
+  github:
+    username: "gracey-gb10"
+    display_name: "Gracey-GB10"
+
+service_tags:
+  openclaw_node_id: "gracey-gb10"
+  sglang_worker_tag: "gb10.gracey"
